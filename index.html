@@ -1,1 +1,54 @@
-"Hello World" 
+<script type="text/javascript" language="javascript">
+
+window.onload = function(e) { 
+	send(); 
+};
+
+function send()
+{
+	var request = new XMLHttpRequest();
+	request.open("GET", "https://api.exmo.com/v1/ticker/", false);
+	request.send();
+	
+	var response = JSON.parse(request.responseText);
+	
+	var htmlText = "<table border='1' width=50%>";
+	htmlText += "<tr> <th></th> <th>UAH</th> <th>USD</th> <th>EUR</th></tr>";
+	htmlText += "<tr> <th>BTC</th>";
+	htmlText += "<td>" +  get_buy_price(response.BTC_UAH) + "</td>";
+	htmlText += "<td>" +  get_buy_price(response.BTC_USD) + "</td>";
+	htmlText += "<td>" +  get_buy_price(response.BTC_EUR) + "</td>";
+	htmlText += "</tr>";
+	
+	htmlText += "<tr> <th>ETH</th>";
+	htmlText += "<td>" +  get_buy_price(response.ETH_UAH) + "</td>";
+	htmlText += "<td>" +  get_buy_price(response.ETH_USD) + "</td>";
+	htmlText += "<td>" +  get_buy_price(response.ETH_EUR) + "</td>";
+	htmlText += "</tr>";
+	
+	var results = "";
+	let usd_uah = (get_buy_price(response.BTC_UAH) / get_buy_price(response.BTC_USD)).toFixed(2);
+	let usd_uah2 = (get_buy_price(response.ETH_UAH) / get_buy_price(response.ETH_USD)).toFixed(2);
+	
+	let eur_uah = (get_buy_price(response.BTC_UAH) / get_buy_price(response.BTC_EUR)).toFixed(2);
+	let eur_uah2 = (get_buy_price(response.ETH_UAH) / get_buy_price(response.ETH_EUR)).toFixed(2);
+	
+	results += `BTC - ${usd_uah} - ${eur_uah}`;
+	results += "</br>"
+	results += `ETH - ${usd_uah2} - ${eur_uah2}`;
+	
+	document.getElementById("div").innerHTML = htmlText;
+	document.getElementById("results").innerHTML = results;
+}
+
+function get_buy_price(pair)
+{
+	return pair.buy_price;
+}
+</script>
+
+
+<html>
+<div id='div'></div>
+<div id='results' style="padding: 30px"></div></body>
+</html>
