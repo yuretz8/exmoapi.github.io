@@ -13,16 +13,18 @@ function send()
 	var response = JSON.parse(request.responseText);
 	
 	var htmlText = "<table border='1' width=50%>";
-	htmlText += "<tr> <th></th> <th>UAH</th> <th>USD</th> <th>EUR</th></tr>";
+	htmlText += "<tr> <th></th> <th>UAH</th> <th>USD</th> <th>USDT</th> <th>EUR</th></tr>";
 	htmlText += "<tr> <th>BTC</th>";
 	htmlText += "<td>" +  get_buy_price(response.BTC_UAH) + "</td>";
 	htmlText += "<td>" +  get_buy_price(response.BTC_USD) + "</td>";
+	htmlText += "<td>" +  get_buy_price(response.BTC_USDT) + "</td>";
 	htmlText += "<td>" +  get_buy_price(response.BTC_EUR) + "</td>";
 	htmlText += "</tr>";
 	
 	htmlText += "<tr> <th>ETH</th>";
 	htmlText += "<td>" +  get_buy_price(response.ETH_UAH) + "</td>";
 	htmlText += "<td>" +  get_buy_price(response.ETH_USD) + "</td>";
+	htmlText += "<td>" +  get_buy_price(response.ETH_USDT) + "</td>";
 	htmlText += "<td>" +  get_buy_price(response.ETH_EUR) + "</td>";
 	htmlText += "</tr>";
 	
