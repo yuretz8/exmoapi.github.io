@@ -1,8 +1,38 @@
 <script type="text/javascript" language="javascript">
 
 window.onload = function(e) { 
+	populateDropDown();
 	send(); 
 };
+
+const TICKER_TYPE = {
+	DIRECT: 'DIRECT',
+	REVERSE: 'REVERSE'
+}
+
+// What we will do with second currency of ticker  
+const OPERATION_TYPE = {
+	BUY: 'BUY',
+	SELL: 'SELL'
+}
+
+function Ticker(name,ask,bid,type = TICKER_TYPE.DIRECT) {
+	this.name = name;
+	this.type = type;
+	this.ask = ask;
+	this.bid = bid;
+}
+
+var columnCurs = ['UAH','USD','USDT','USDC','EUR','PLN'];
+var rowCurrs = ['BTC','ETH','LTC','BCH','USDC'];
+var MainCur = 'UAH';
+const Precision = 2;
+// TODO: investigate double calculation
+// Precision for reverse ticker calculation
+const ReversionPrecision = 6;
+// DIRECT means result rate will be (MainCur/columnCur)
+// REVERSE means result rate will bew (columnCur/MainCur)
+const ResultTickerType = TICKER_TYPE.REVERSE;
 
 function send()
 {
@@ -12,61 +42,157 @@ function send()
 	
 	var response = JSON.parse(request.responseText);
 	
-	var htmlText = "<table border='1' width=50%>";
-	htmlText += "<tr> <th></th> <th>UAH</th> <th>USD</th> <th>USDT</th> <th>EUR</th> <th>PLN</th></tr>";
+	// Make main currency column at first
+	columnCurs = columnCurs.filter(item => item !== MainCur);
+	columnCurs.unshift(MainCur);
 
-	// BTC row
-	htmlText += "<tr> <th>BTC</th>";
-	htmlText += "<td>" +  get_buy_price(response.BTC_UAH) +  "</td>";
+	var htmlText = "<table border='1>'";
 
-	htmlText += "<td>" +  get_buy_price(response.BTC_USD);
-	htmlText += " (" +  get_rate(response.BTC_UAH, response.BTC_USD) + ")";
-	htmlText += "</td>";
-	htmlText += "<td>" +  get_buy_price(response.BTC_USDT);
-	htmlText += " (" +  get_rate(response.BTC_UAH, response.BTC_USDT) + ")";
-	htmlText += "</td>";
-	htmlText += "<td>" +  get_buy_price(response.BTC_EUR);
-	htmlText += " (" +  get_rate(response.BTC_UAH, response.BTC_EUR) + ")";
-	htmlText += "</td>";
-	htmlText += "<td>" +  get_buy_price(response.BTC_PLN);
-	htmlText += " (" +  get_rate(response.BTC_UAH, response.BTC_PLN) + ")";
-	htmlText += "</td>";
-
+	// Header
+	htmlText += "<tr><th></th>";
+	for (let columnCur of columnCurs)
+	{
+		htmlText += "<th>" + columnCur + "</th>";
+	}
 	htmlText += "</tr>";
-	
-	// ETH row
-	htmlText += "<tr> <th>ETH</th>";
-	htmlText += "<td>" +  get_buy_price(response.ETH_UAH) + "</td>";
 
-	htmlText += "<td>" +  get_buy_price(response.ETH_USD);
-	htmlText += " (" +  get_rate(response.ETH_UAH, response.ETH_USD) + ")";
-	htmlText += "</td>";
-	htmlText += "<td>" +  get_buy_price(response.ETH_USDT);
-	htmlText += " (" +  get_rate(response.ETH_UAH, response.ETH_USDT) + ")";
-	htmlText += "</td>";
-	htmlText += "<td>" +  get_buy_price(response.ETH_EUR);
-	htmlText += " (" +  get_rate(response.ETH_UAH, response.ETH_EUR) + ")";
-	htmlText += "</td>";
+	// Rows
+	for (let rowCur of rowCurrs)
+	{
+		htmlText += "<tr><th>" + rowCur + "</th>";
+		for (let columnCur of columnCurs)
+		{
+			// For example BTC_UAH
+			var firstTicker = get_ticker_info(response, rowCur, MainCur);
+			// For example BTC_USD
+			var secondTicker = get_ticker_info(response, rowCur, columnCur);
 
-	htmlText += "</tr>";
-	
+			if (columnCur != MainCur)
+			{
+				htmlText += "<td>" + print_value(secondTicker?.bid);
+				htmlText += print_rate(get_rate(firstTicker, secondTicker));
+			}
+			else
+			{
+				htmlText += "<td>" + print_value(firstTicker?.ask);
+			}
+			htmlText += "</td>";
+		}
+		htmlText += "</tr>";
+	}
+
+	// Native
+	htmlText += "<tr><th>Native</th>";
+	for (let columnCur of columnCurs)
+	{
+		if (columnCur != MainCur)
+		{
+			var ticker = get_ticker_info(response, columnCur, MainCur);
+			htmlText += "<td>" + print_value(ticker?.bid) + "</td>";
+		}
+		else
+		{
+			htmlText += "<td></td>";
+		}
+	}
+
 	document.getElementById("div").innerHTML = htmlText;
 }
 
-function get_buy_price(pair)
+function populateDropDown()
 {
-	return pair.buy_price;
+  	var select = document.getElementById('main_currency');
+  	columnCurs.forEach((x, key) => { select[key] = new Option(x, x); });
+}
+
+function DropDownChanged(value)
+{
+	MainCur = value;
+	send();
+}
+
+function get_ticker(cur1,cur2)
+{
+	return `${cur1}_${cur2}`;
+}
+
+function get_ticker_info(response,cur1,cur2)
+{
+	var ticker = get_ticker(cur1, cur2);
+	var info = response[ticker];
+	if (info)
+		return new Ticker(ticker,get_sell_price(info),get_buy_price(info));
+
+	var reverseTicker = get_ticker(cur2, cur1);
+	var info = response[reverseTicker];
+	if (info)
+		return new Ticker(ticker, reverse_price(get_buy_price(info)), reverse_price(get_sell_price(info)), TICKER_TYPE.REVERSE);
+	return;
+}
+
+function get_ticker_price(tickerInfo,OPERATION_TYPE)
+{
+	switch (OPERATION_TYPE)
+	{
+		case OPERATION_TYPE.BUY: return tickerInfo.buy_price;
+		case OPERATION_TYPE.SELL: return tickerInfo.sell_price;		
+	}
+}
+
+function reverse_price(price)
+{
+	return (1 / price).toFixed(ReversionPrecision);
+}
+
+function get_buy_price(ticker)
+{
+	return ticker ? ticker.buy_price : null;
+}
+
+function get_sell_price(ticker)
+{
+	return ticker ? ticker.sell_price : null;
 }
 
 // Get y to x price 
-function get_rate(c_to_x_price, c_to_y_price)
+// Example: 
+//	firstTicker: BTC_UAH
+//	secondTicker: BTC_USD
+//	will return USD_UAH rate
+function get_rate(firstTicker, secondTicker)
 {
-	return (get_buy_price(c_to_x_price) / get_buy_price(c_to_y_price)).toFixed(2);
+	return firstTicker && secondTicker
+		? ResultTickerType == TICKER_TYPE.DIRECT
+			? (secondTicker.bid / firstTicker.ask).toFixed(Precision)
+			: (firstTicker.ask / secondTicker.bid).toFixed(Precision)
+		: null;
+}
+
+function print_rate(rate)
+{
+	return rate ? ` (${rate})` : '';
+}
+
+function print_value(value, whenEmpty = '-')
+{
+	return value ?? whenEmpty;
 }
 </script>
 
 
 <html>
+<head>
+	<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.0.0/dist/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+	<style>
+		.element {
+			margin: 10px;
+		}
+		#main_currency {
+			max-width: 150px;
+		}
+	</style>
+</head>
 <title>Exmo API</title> 
-<div id='div'></div>
+<select id="main_currency" class="custom-select element" onchange="DropDownChanged(this.value)"></select>
+<div id="div" class="table-responsive-lg element"></div>
 </html>
