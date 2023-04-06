@@ -9,7 +9,7 @@ var rowCurrs = ['BTC','ETH','LTC','BCH','USDC','USDT'];
 var allCurrs = new Set(columnCurs.concat(rowCurrs));
 var MainCur = 'UAH';
 var Rates = new Map();
-const Precision = 3;
+const Precision = 4;
 const PricePrecision = 2;
 
 // true means result rate will be (columnCur/MainCur) otherwise (MainCur/columnCur)
