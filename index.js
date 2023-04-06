@@ -26,56 +26,60 @@ function Rate(name,ask,bid,reverse = {}) {
 	this.reverse = reverse;
 }
 
-async function getRates()
+function getRates()
 {
-	// TODO: skip provider on error
-	await Promise.all(Array.from(PROVIDERS).map(async ([_, provider]) => {
-		await getProviderRates(provider);
-		populateRates(provider.name);
-	}));
-	resizeTables();
+	PROVIDERS.forEach((value, key) => {
+		getProviderRates(value);
+	});
 }
 
-async function getProviderRates(provider)
+function getProviderRates(provider)
+{
+	fetch(provider.url, provider.useProxy, response => {
+		populateRates(provider, response);
+		fillRates(provider);
+		resizeTables();
+	});
+}
+
+function fetch(url, useProxy, success) {
+	var cors_api_url = 'https://cors-anywhere.herokuapp.com/';
+	$.get(useProxy ? cors_api_url + url : url, 
+		function (data, textStatus, jqXHR) {  // success callback
+			success(data);
+			});
+}
+
+function populateRates(provider, response)
 {
 	var rates = new Map();
 	Rates.set(provider.name, rates);
 
-	var url = provider.url;
-	var response = await fetch(url);
 	for (let rowCur of allCurrs)
 	{
 		for (let columnCur of allCurrs)
 		{
 			if (rowCur !== columnCur)
 			{
-				var rate = getRate(rowCur, columnCur);
+				var rate = getRate(response, rowCur, columnCur);
 				if (rate)
 					rates.set(rate.name, rate);
 			}
 		}
 	}
 
-	function getRate(cur1, cur2, findReverse = true) 
+	function getRate(response, cur1, cur2, findReverse = true) 
 	{
-		// TODO: using response makes function not pure
-		var rate = provider.toRate(response,cur1,cur2);
+		var rate = provider.toRate(response, cur1, cur2);
 		if (rate)
 			return rate;
 		else if (findReverse) 
-			return getRate(cur2, cur1, false);
+			return getRate(response, cur2, cur1, false);
 		return;
 	}
 }
 
-function findRateToSell(cur1,cur2,PROVIDER)
-{
-	var rates = Rates.get(PROVIDER);
-	return rates.get(getTicker(cur1, cur2)) 
-		?? (rates.get(getTicker(cur2, cur1)))?.reverse;
-}
-
-function populateRates(provider)
+function fillRates(provider)
 {
 	// Header
 	var htmlText = "<tr><th></th>";
@@ -92,7 +96,7 @@ function populateRates(provider)
 		for (let columnCur of columnCurs)
 		{
 			// For example UAH_BTC
-			var firstRate = findRateToSell(MainCur, rowCur, provider);
+			var firstRate = findRateToSell(MainCur, rowCur, provider.name);
 			if (columnCur === MainCur)
 			{
 				var rateToShow = IsRawToColumnRate ? firstRate?.reverse : firstRate;
@@ -101,7 +105,7 @@ function populateRates(provider)
 			else
 			{
 				// For example BTC_USD
-				var secondRate = findRateToSell(rowCur, columnCur, provider);
+				var secondRate = findRateToSell(rowCur, columnCur, provider.name);
 				var rateToShow = IsRawToColumnRate ? secondRate : secondRate?.reverse;
 				htmlText += "<td>" + printValue(rateToShow?.bid);
 				htmlText += printPrice(firstRate?.bid * secondRate?.bid, columnCur);
@@ -118,7 +122,7 @@ function populateRates(provider)
 	{
 		if (columnCur != MainCur)
 		{
-			var rate = findRateToSell(columnCur, MainCur, provider);
+			var rate = findRateToSell(columnCur, MainCur, provider.name);
 			htmlText += "<td>" + printValue(rate?.bid) + "</td>";
 		}
 		else
@@ -127,23 +131,15 @@ function populateRates(provider)
 		}
 	}
 
-	var tableId = PROVIDERS.get(provider).tableId;
+	var tableId = provider.tableId;
 	document.getElementById(tableId).innerHTML = htmlText;
 }
 
-function fetch(url) {
-    return new Promise(function (resolve, reject) {
-        var xhr = new XMLHttpRequest();
-        xhr.open('get', url, true);
-        xhr.onload = function(e) {
-        	resolve(JSON.parse(xhr.responseText));
-        };
-        xhr.onerror = function () {
-        	resolve(undefined);
-        	console.error("** An error occurred during the XMLHttpRequest");
-        };
-        xhr.send();
-    });
+function findRateToSell(cur1,cur2,provider)
+{
+	var rates = Rates.get(provider);
+	return rates.get(getTicker(cur1, cur2)) 
+		?? (rates.get(getTicker(cur2, cur1)))?.reverse;
 }
 
 function populateDropDown()

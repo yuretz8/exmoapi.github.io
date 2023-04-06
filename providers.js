@@ -162,6 +162,7 @@ class WhitebitProvider extends BaseProvider {
 		this.tableId = 'table_whitebit';
 		this.separator = '_';
 		this.url = 'https://whitebit.com/api/v2/public/ticker';
+		this.useProxy = true;
 	}
 
 	pickRate(response,ticker) {
