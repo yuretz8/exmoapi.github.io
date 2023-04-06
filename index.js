@@ -163,7 +163,7 @@ function dropDownChanged(value)
 	MainCur = value;
 	mainCurrencyAsFirst();
 	PROVIDERS.forEach((value, key) => {
-		populateRates(key);
+		fillRates(value);
 	});
 	resizeTables();
 }
