@@ -5,7 +5,8 @@ const PROVIDER = {
 	KRAKEN: 'KRAKEN',
 	KUNA: 'KUNA',
 	BYBIT: 'BYBIT',
-	WHITEBIT: 'WHITEBIT'
+	WHITEBIT: 'WHITEBIT',
+	KUCOIN: 'KUCOIN'
 };
 
 class BaseProvider 
@@ -166,13 +167,28 @@ class WhitebitProvider extends BaseProvider {
 	}
 
 	pickRate(response,ticker) {
-		// TODO: Investigate problem - Origin null - with local execution
-		if (!response?.result)
-			return;
 		var rate = response.result.find(x => x.tradingPairs === ticker);
 		if (!rate)
 			return;
 		return new Rate(ticker, rate.lowestAsk, rate.highestBid);
+	}
+}
+
+class KucoinProvider extends BaseProvider {
+	constructor() {
+		super();
+		this.name = PROVIDER.KUCOIN;
+		this.tableId = 'table_kucoin';
+		this.separator = '-';
+		this.url = 'https://api.kucoin.com/api/v1/market/allTickers';
+		this.useProxy = true;
+	}
+
+	pickRate(response,ticker) {
+		var rate = response.data.ticker.find(x => x.symbol === ticker);
+		if (!rate)
+			return;
+		return new Rate(ticker, rate.sell, rate.buy);
 	}
 }
 
@@ -183,5 +199,6 @@ const PROVIDERS = new Map([
 	[PROVIDER.KRAKEN, new KrakenProvider() ],
 	[PROVIDER.KUNA, new KunaProvider() ],
 	[PROVIDER.BYBIT, new BybitProvider() ],
-	[PROVIDER.WHITEBIT, new WhitebitProvider() ]
+	[PROVIDER.WHITEBIT, new WhitebitProvider() ],
+	[PROVIDER.Kucoin, new KucoinProvider() ]
 ]);
