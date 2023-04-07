@@ -6,7 +6,8 @@ const PROVIDER = {
 	KUNA: 'KUNA',
 	BYBIT: 'BYBIT',
 	WHITEBIT: 'WHITEBIT',
-	KUCOIN: 'KUCOIN'
+	KUCOIN: 'KUCOIN',
+	GATEIO: 'GATEIO'
 };
 
 class BaseProvider 
@@ -192,13 +193,32 @@ class KucoinProvider extends BaseProvider {
 	}
 }
 
+class GateioProvider extends BaseProvider {
+	constructor() {
+		super();
+		this.name = PROVIDER.GATEIO;
+		this.tableId = 'table_gateio';
+		this.separator = '_';
+		this.url = 'https://api.gateio.ws/api/v4/spot/tickers';
+		this.useProxy = true;
+	}
+
+	pickRate(response,ticker) {
+		var rate = response.find(x => x.currency_pair === ticker);
+		if (!rate)
+			return;
+		return new Rate(ticker, rate.lowest_ask, rate.highest_bid);
+	}
+}
+
 const PROVIDERS = new Map([
+	[PROVIDER.WHITEBIT, new WhitebitProvider() ],
 	[PROVIDER.EXMO, new ExmoProvider() ],
 	[PROVIDER.WIREX, new WirexProvider() ],
 	[PROVIDER.BINANCE, new BinanceProvider() ],
 	[PROVIDER.KRAKEN, new KrakenProvider() ],
 	[PROVIDER.KUNA, new KunaProvider() ],
 	[PROVIDER.BYBIT, new BybitProvider() ],
-	[PROVIDER.WHITEBIT, new WhitebitProvider() ],
-	[PROVIDER.Kucoin, new KucoinProvider() ]
+	[PROVIDER.KUCOIN, new KucoinProvider() ],
+	[PROVIDER.GATEIO, new GateioProvider() ]
 ]);
