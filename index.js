@@ -1,23 +1,26 @@
 window.onload = function(e) { 
 	mainCurrencyAsFirst();
 	populateDropDown(); 
+	buildSecondTable();
 	getRates();
 };
 
 var columnCurs = ['BTC','ETH','UAH','USD','USDT','USDC','EUR','PLN','GBP'];
-var rowCurrs = ['BTC','ETH','LTC','BCH','USDC','USDT'];
+var columnDynamicCurs = [...columnCurs];
+//var rowCurrs = ['BTC','ETH','LTC','BCH','USDC','USDT'];
+var rowCurrs = ['BTC','USDT'];
 var allCurrs = new Set(columnCurs.concat(rowCurrs));
 var MainCur = 'UAH';
 var Rates = new Map();
 const Precision = 4;
 const PricePrecision = 2;
+// if rate or price is less than threshold, it will be inverted (1 / value)
+const PriceInvertingThreshold = 0.03;
 
-// true means result rate will be (columnCur/MainCur) otherwise (MainCur/columnCur)
-// Set to false for expensive main currency (like BTC)
-const IsPriceReversed = false;
-// true means row_column rate otherwise column_row
-// Set to false for expensive main currency (like BTC)
-const IsRawToColumnRate = true;
+// true means showing both ask and bid prices
+const ShowBothPrices = true;
+// true means showing calculated prices in brackets
+const ShowPrices = false;
 
 function Rate(name,ask,bid,reverse = {}) {
 	this.name = name;
@@ -38,6 +41,7 @@ function getProviderRates(provider)
 	fetch(provider.url, provider.useProxy, response => {
 		populateRates(provider, response);
 		fillRates(provider);
+		fillSecondRates(provider);
 		resizeTables();
 	});
 }
@@ -83,7 +87,7 @@ function fillRates(provider)
 {
 	// Header
 	var htmlText = "<tr><th></th>";
-	for (let columnCur of columnCurs)
+	for (let columnCur of columnDynamicCurs)
 	{
 		htmlText += "<th>" + columnCur + "</th>";
 	}
@@ -93,22 +97,29 @@ function fillRates(provider)
 	for (let rowCur of rowCurrs)
 	{
 		htmlText += "<tr><th>" + rowCur + "</th>";
-		for (let columnCur of columnCurs)
+		for (let columnCur of columnDynamicCurs)
 		{
 			// For example UAH_BTC
 			var firstRate = findRateToSell(MainCur, rowCur, provider.name);
 			if (columnCur === MainCur)
 			{
-				var rateToShow = IsRawToColumnRate ? firstRate?.reverse : firstRate;
-				htmlText += "<td>" + printValue(rateToShow?.ask);
+				htmlText += `<td>${printValue(firstRate?.bid)}`;
+				if (ShowBothPrices)
+					htmlText += printValue(firstRate?.ask);
 			}
 			else
 			{
 				// For example BTC_USD
 				var secondRate = findRateToSell(rowCur, columnCur, provider.name);
-				var rateToShow = IsRawToColumnRate ? secondRate : secondRate?.reverse;
-				htmlText += "<td>" + printValue(rateToShow?.bid);
-				htmlText += printPrice(firstRate?.bid * secondRate?.bid, columnCur);
+				htmlText += "<td>" + printValue(secondRate?.bid);
+				if (ShowPrices)
+					htmlText += printPrice(firstRate?.bid * secondRate?.bid);
+				if (ShowBothPrices)
+				{
+					htmlText += printValue(secondRate?.ask);
+					if (ShowPrices)
+						htmlText += printPrice(secondRate?.ask * firstRate?.ask);
+				}
 			}
 
 			htmlText += "</td>";
@@ -118,7 +129,7 @@ function fillRates(provider)
 
 	// Native
 	htmlText += "<tr><th>Native</th>";
-	for (let columnCur of columnCurs)
+	for (let columnCur of columnDynamicCurs)
 	{
 		if (columnCur != MainCur)
 		{
@@ -131,8 +142,7 @@ function fillRates(provider)
 		}
 	}
 
-	var tableId = provider.tableId;
-	document.getElementById(tableId).innerHTML = htmlText;
+	document.getElementById(provider.tableId).innerHTML = htmlText;
 }
 
 function findRateToSell(cur1,cur2,provider)
@@ -142,20 +152,58 @@ function findRateToSell(cur1,cur2,provider)
 		?? (rates.get(getTicker(cur2, cur1)))?.reverse;
 }
 
-function populateDropDown()
-{
-  	var select = document.getElementById('main_currency');
-  	columnCurs.forEach((x, key) => { select[key] = new Option(x, x); });
-}
-
 // Make main currency column at first
 function mainCurrencyAsFirst()
 {
-	//columnCurs = columnCurs.filter(item => item !== MainCur);
-	//columnCurs.unshift(MainCur);
-	var index = columnCurs.indexOf(MainCur);
-	if (index !== 0)
-		[columnCurs[0], columnCurs[index]] = [columnCurs[index], columnCurs[0]];
+	columnDynamicCurs = [MainCur].concat(columnCurs.filter(item => item !== MainCur));
+}
+
+function populateDropDown()
+{
+  	var select = document.getElementById('main_currency');
+  	columnDynamicCurs.forEach((x, key) => { select[key] = new Option(x, x); });
+}
+
+function buildSecondTable()
+{
+	// Header
+	var htmlText = "<tr><th></th>";
+	var providers = Array.from(PROVIDERS).map(x => x[1].name);
+	for (let provider of providers)
+	{
+		htmlText += "<th>" + provider + "</th>";
+	}
+	htmlText += "</tr>";
+
+	// Rows
+	for (let cur of columnDynamicCurs)
+	{
+		htmlText += "<tr><th>" + cur + "</th>";
+		for (let provider of providers)
+		{
+			htmlText += `<td id="${formatTableCellId(provider, cur)}"/>`;
+		}
+		htmlText += "</tr>";
+	}
+
+	document.getElementById('test').innerHTML = htmlText;
+}
+
+function fillSecondRates(provider)
+{
+	console.log(provider);
+	// Rows
+	for (let cur of columnDynamicCurs)
+	{
+		var rate = findRateToSell(MainCur, cur, provider.name);
+		var cellId = formatTableCellId(provider.name, cur);
+		$("#" + cellId).html(printValue(rate?.bid) + printValue(rate?.ask));
+	}
+}
+
+function formatTableCellId(provider, cur)
+{
+	return `${provider}_${cur}`;
 }
 
 function dropDownChanged(value)
@@ -164,6 +212,7 @@ function dropDownChanged(value)
 	mainCurrencyAsFirst();
 	PROVIDERS.forEach((value, key) => {
 		fillRates(value);
+		fillSecondRates(value);
 	});
 	resizeTables();
 }
@@ -173,7 +222,7 @@ function resizeTables()
 	// Resize columns width
 	var tableIds = Array.from(PROVIDERS).map(x => x[1].tableId);
 	var tables = tableIds.map(x => document.getElementById(x));
-	columnCurs.forEach((x, index) => {
+	columnDynamicCurs.forEach((x, index) => {
 		var columns = tables.filter(x => x.rows.length > 0).map(x => x.rows[0].cells[index + 1]);
 		var maxWidth = Math.max(...columns.map(x => x.clientWidth));
 		columns.forEach(x => x.width = maxWidth + 2);
@@ -187,7 +236,7 @@ function getTicker(cur1,cur2)
 
 function getValue(value)
 {
-	return value < 1 ? 1 / value : value;
+	return value < PriceInvertingThreshold ? 1 / value : value;
 }
 
 function printPrice(rate)
@@ -198,6 +247,16 @@ function printPrice(rate)
 
 function printValue(value, whenEmpty = '-')
 {
-	value = getValue(value);
-	return value ? value.toFixed(Precision) : whenEmpty;
+	if (!value) 
+		return printValueDiv(whenEmpty);
+
+	var result = getValue(value);
+	return result !== value 
+		? printValueDiv(result.toFixed(Precision), "inverted_value")
+		: printValueDiv(result.toFixed(Precision));
+}
+
+function printValueDiv(value, classAttr = '')
+{
+	return `<div class="${classAttr}">${value}</div>`;
 }

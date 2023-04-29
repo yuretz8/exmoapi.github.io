@@ -1,10 +1,11 @@
 <html>
-<title>Exmo API</title> 
+<title>Rates</title> 
 <head>
-	<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.3/jquery.min.js"></script>
+	<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-rbsA2VBKQhggwzxH7pPCaAqO46MgnOM80zW1RWuH61DGLwZJEdK2Kadq2F9CUG65" crossorigin="anonymous">
+	<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.4/jquery.min.js"></script>
+	<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-kenU1KFdBIe4zVF0s0G1M5b4hcpxyD9F7jL+jjXkk+Q2h455rYXK/7HAuoJl+0I4" crossorigin="anonymous"></script>
 	<script type="text/javascript" src="providers.js"></script>
 	<script type="text/javascript" src="index.js"></script>
-	<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.0.0/dist/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
 	<style>
 		.element {
 			margin: 7px;
@@ -12,28 +13,46 @@
 		#main_currency {
 			max-width: 150px;
 		}
+		.inverted_value {
+			font-style: italic;
+		}
 	</style>
 </head>
 <div class="container-fluid">
-	<select id="main_currency" class="custom-select element" onchange="dropDownChanged(this.value)"></select>
+	<select id="main_currency" class="element form-select" onchange="dropDownChanged(this.value)"></select>
 
-	<h3 class="element">Whitebit</h3>
-	<table id="table_whitebit" class="element" border='1'></table>
-	<h3 class="element">Exmo</h3>
-	<table id="table_exmo" class="element" border='1'></table>
-	<h3 class="element">Wirex</h3>
-	<table id="table_wirex" class="element" border='1'></table>
-	<h3 class="element">Binance</h3>
-	<table id="table_binance" class="element" border='1'></table>
-	<h3 class="element">Kraken</h3>
-	<table id="table_kraken" class="element" border='1'></table>
-	<h3 class="element">Kuna</h3>
-	<table id="table_kuna" class="element" border='1'></table>
-	<h3 class="element">Bybit</h3>
-	<table id="table_bybit" class="element" border='1'></table>
-	<h3 class="element">Kucoin</h3>
-	<table id="table_kucoin" class="element" border='1'></table>
-	<h3 class="element">GateIO</h3>
-	<table id="table_gateio" class="element" border='1'></table>
+	<nav>
+		<div class="nav nav-tabs" id="nav-tab" role="tablist">
+			<button class="nav-link" id="nav-main-tab" data-bs-toggle="tab" data-bs-target="#nav-main" type="button" role="tab" aria-controls="nav-main" aria-selected="true">Main Currency</button>
+			<button class="nav-link active" id="nav-second-tab" data-bs-toggle="tab" data-bs-target="#nav-second" type="button" role="tab" aria-controls="nav-second" aria-selected="false">Second</button>
+		</div>
+	</nav>
+
+	<div class="tab-content">
+		<div class="tab-pane fade" id="nav-main" role="tabpanel" aria-labelledby="nav-main-tab">
+			<h3 class="element">Whitebit</h3>
+			<table id="table_whitebit" class="element table-bordered"></table>
+			<h3 class="element">Exmo</h3>
+			<table id="table_exmo" class="element table-bordered"></table>
+			<h3 class="element">Wirex</h3>
+			<table id="table_wirex" class="element table-bordered"></table>
+			<h3 class="element">Binance</h3>
+			<table id="table_binance" class="element table-bordered"></table>
+			<h3 class="element">Kraken</h3>
+			<table id="table_kraken" class="element table-bordered"></table>
+			<h3 class="element">Kuna</h3>
+			<table id="table_kuna" class="element table-bordered"></table>
+			<h3 class="element">Bybit</h3>
+			<table id="table_bybit" class="element table-bordered"></table>
+			<h3 class="element">Kucoin</h3>
+			<table id="table_kucoin" class="element table-bordered"></table>
+			<h3 class="element">GateIO</h3>
+			<table id="table_gateio" class="element table-bordered"></table>
+		</div>
+
+		<div class="tab-pane fade show active" id="nav-second" role="tabpanel" aria-labelledby="nav-second-tab">
+			<table id="test" class="element table-bordered"></table>
+		</div>
+	</div>
 </div>
 </html>
