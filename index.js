@@ -1,4 +1,5 @@
 window.onload = function(e) { 
+	setInterval(checkOverallFetching, 500);
 	mainCurrencyAsFirst();
 	populateDropDown(); 
 	buildSecondTable();
@@ -10,8 +11,10 @@ var columnDynamicCurs = [...columnCurs];
 //var rowCurrs = ['BTC','ETH','LTC','BCH','USDC','USDT'];
 var rowCurrs = ['BTC','USDT'];
 var allCurrs = new Set(columnCurs.concat(rowCurrs));
-var MainCur = 'UAH';
+var MainCur = 'USDT';
 var Rates = new Map();
+var FetchedProviders = [];
+var IsFetchingProcessed = false;
 const Precision = 4;
 const PricePrecision = 2;
 // if rate or price is less than threshold, it will be inverted (1 / value)
@@ -42,7 +45,6 @@ function getProviderRates(provider)
 		populateRates(provider, response);
 		fillRates(provider);
 		fillSecondRates(provider);
-		resizeTables();
 	});
 }
 
@@ -71,6 +73,7 @@ function populateRates(provider, response)
 			}
 		}
 	}
+	FetchedProviders.push(provider.name);
 
 	function getRate(response, cur1, cur2, findReverse = true) 
 	{
@@ -168,42 +171,78 @@ function buildSecondTable()
 {
 	// Header
 	var htmlText = "<tr><th></th>";
-	var providers = Array.from(PROVIDERS).map(x => x[1].name);
-	for (let provider of providers)
+	for (let cur of columnCurs)
 	{
-		htmlText += "<th>" + provider + "</th>";
+		htmlText += "<th>" + cur + "</th>";
 	}
 	htmlText += "</tr>";
 
 	// Rows
-	for (let cur of columnDynamicCurs)
+	var providers = Array.from(PROVIDERS).map(x => x[1].name);
+	for (let provider of providers)
 	{
-		htmlText += "<tr><th>" + cur + "</th>";
-		for (let provider of providers)
+		htmlText += "<tr><th>" + provider + "</th>";
+		for (let columnCur of columnCurs)
 		{
-			htmlText += `<td id="${formatTableCellId(provider, cur)}"/>`;
+			htmlText += `<td id="${formatTableCellId(provider, columnCur)}"/>`;
 		}
 		htmlText += "</tr>";
 	}
 
-	document.getElementById('test').innerHTML = htmlText;
+	// Profit
+	htmlText += "<tr><th>Profit</th>";
+	for (let columnCur of columnCurs)
+	{
+		htmlText += `<td id="${formatProfitCellId(columnCur)}"/>`;
+	}
+
+	document.getElementById('second').innerHTML = htmlText;
 }
 
 function fillSecondRates(provider)
 {
-	console.log(provider);
-	// Rows
-	for (let cur of columnDynamicCurs)
+	for (let columnCur of columnCurs)
 	{
-		var rate = findRateToSell(MainCur, cur, provider.name);
-		var cellId = formatTableCellId(provider.name, cur);
+		var rate = findRateToSell(MainCur, columnCur, provider.name);
+		var cellId = formatTableCellId(provider.name, columnCur);
 		$("#" + cellId).html(printValue(rate?.bid) + printValue(rate?.ask));
+	}
+}
+
+function fillProfits()
+{
+	var providers = Array.from(PROVIDERS).map(x => x[1].name);
+	for (let columnCur of columnCurs)
+	{
+		var rates = providers.map(x => 
+		({ 
+			provider: x,
+			rate: findRateToSell(MainCur, columnCur, x)
+		})).filter(x => x.rate);
+
+		if (rates.length <= 1)
+		{
+			$("#" + formatProfitCellId(columnCur)).html(printValueDiv('-'));
+		}
+		else
+		{
+			const max = rates.reduce((prev, current) => (prev.rate.bid > current.rate.bid) ? prev : current);
+			const min = rates.reduce((prev, current) => (prev.rate.ask < current.rate.ask) ? prev : current);
+			$("#" + formatTableCellId(max.provider, columnCur) + " div:first").addClass("profit");
+			$("#" + formatTableCellId(min.provider, columnCur) + " div:last").addClass("profit");
+			$("#" + formatProfitCellId(columnCur)).html((max.rate.bid / min.rate.ask).toFixed(PricePrecision));
+		}
 	}
 }
 
 function formatTableCellId(provider, cur)
 {
 	return `${provider}_${cur}`;
+}
+
+function formatProfitCellId(cur)
+{
+	return `${cur}_profit`;
 }
 
 function dropDownChanged(value)
@@ -213,8 +252,19 @@ function dropDownChanged(value)
 	PROVIDERS.forEach((value, key) => {
 		fillRates(value);
 		fillSecondRates(value);
+		fillProfits();
+		resizeTables();
 	});
-	resizeTables();
+}
+
+function checkOverallFetching() 
+{
+	if (FetchedProviders.length === PROVIDERS.size && !IsFetchingProcessed)
+	{
+		resizeTables();
+		fillProfits();
+		IsFetchingProcessed = true;
+	}
 }
 
 function resizeTables()
