@@ -169,7 +169,7 @@ class WhitebitProvider extends BaseProvider {
 
 	pickRate(response,ticker) {
 		var rate = response.result.find(x => x.tradingPairs === ticker);
-		if (!rate)
+		if (!rate || !rate.tradesEnabled)
 			return;
 		return new Rate(ticker, rate.lowestAsk, rate.highestBid);
 	}

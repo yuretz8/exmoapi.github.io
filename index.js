@@ -6,12 +6,12 @@ window.onload = function(e) {
 	getRates();
 };
 
-var columnCurs = ['BTC','ETH','UAH','USD','USDT','USDC','EUR','PLN','GBP'];
+var columnCurs = ['WXT','ETC','BTC','ETH','UAH','USD','USDT','USDC','EUR','PLN','GBP'];
 var columnDynamicCurs = [...columnCurs];
 //var rowCurrs = ['BTC','ETH','LTC','BCH','USDC','USDT'];
 var rowCurrs = ['BTC','USDT'];
 var allCurrs = new Set(columnCurs.concat(rowCurrs));
-var MainCur = 'USDT';
+var MainCur = 'WXT';
 var Rates = new Map();
 var FetchedProviders = [];
 var IsFetchingProcessed = false;
