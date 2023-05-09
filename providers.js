@@ -129,7 +129,7 @@ class KunaProvider extends BaseProvider {
 		this.name = PROVIDER.KUNA;
 		this.tableId = 'table_kuna';
 		this.separator = '';
-		this.url = 'https://api.kuna.io/v3/tickers';
+		this.url = 'https://api.kuna.io/v3/tickers??symbols=ALL';
 	}
 
 	pickRate(response,ticker) {

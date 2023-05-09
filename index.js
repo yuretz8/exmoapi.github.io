@@ -6,7 +6,7 @@ window.onload = function(e) {
 	getRates();
 };
 
-var columnCurs = ['WXT','ETC','BTC','ETH','UAH','USD','USDT','USDC','EUR','PLN','GBP'];
+var columnCurs = ['SUI','WXT','ETC','BTC','ETH','UAH','USD','USDT','USDC','EUR','PLN','GBP'];
 var columnDynamicCurs = [...columnCurs];
 //var rowCurrs = ['BTC','ETH','LTC','BCH','USDC','USDT'];
 var rowCurrs = ['BTC','USDT'];
@@ -228,9 +228,17 @@ function fillProfits()
 		{
 			const max = rates.reduce((prev, current) => (prev.rate.bid > current.rate.bid) ? prev : current);
 			const min = rates.reduce((prev, current) => (prev.rate.ask < current.rate.ask) ? prev : current);
-			$("#" + formatTableCellId(max.provider, columnCur) + " div:first").addClass("profit");
-			$("#" + formatTableCellId(min.provider, columnCur) + " div:last").addClass("profit");
-			$("#" + formatProfitCellId(columnCur)).html((max.rate.bid / min.rate.ask).toFixed(PricePrecision));
+			var profit = max.rate.bid / min.rate.ask;
+			if (profit > 1.01)
+			{
+				$("#" + formatTableCellId(max.provider, columnCur) + " div:first").addClass("profit");
+				$("#" + formatTableCellId(min.provider, columnCur) + " div:last").addClass("profit");
+				$("#" + formatProfitCellId(columnCur)).html(profit.toFixed(PricePrecision));
+			}
+			else
+			{
+				$("#" + formatProfitCellId(columnCur)).html(printValueDiv('-'));
+			}
 		}
 	}
 }
